@@ -1,10 +1,11 @@
+const dashjs = window.dashjs
+
 import { VideoClient } from "../videoclient";
-import Dash from 'dashjs'
 
 class DashClient extends VideoClient {
   registeredFileExtensions = ['mpd'];
 
-  client: Dash.MediaPlayerClass
+  client: typeof dashjs.MediaPlayerClass
 
   constructor() {
     super()
@@ -13,7 +14,7 @@ class DashClient extends VideoClient {
   init(video: HTMLVideoElement, url: string) {
     super.init(video, url)
 
-    this.client = Dash.MediaPlayer().create()
+    this.client = dashjs.MediaPlayer().create()
     this.client.initialize(this.videoEl, this.currentUrl, this.autoplay)
     this.client.updateSettings({ 'debug': { 'logLevel': 0 }});
 
@@ -22,7 +23,7 @@ class DashClient extends VideoClient {
   }
 
   setupEventListeners() {
-    this.client.on(Dash.MediaPlayer.events['STREAM_INITIALIZED'], () => {
+    this.client.on(dashjs.MediaPlayer.events['STREAM_INITIALIZED'], () => {
       this.client.setTextTrack(-1) //turn of captions by default
     })
   }

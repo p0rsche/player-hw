@@ -73,7 +73,8 @@ module.exports = {
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       template: './src/index.html',
-      favicon: './assets/images/favicon.ico'
+      favicon: './assets/images/favicon.ico',
+      scriptLoading: 'defer',
     }),
     new ForkTsCheckerWebpackPlugin(),
     new ESLintPlugin({

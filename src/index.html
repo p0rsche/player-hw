@@ -7,8 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <script async src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.0/hls.min.js" integrity="sha512-UdBBt/U2IpeTsZspIuaYSuNKTGO4dwnX7UdB2Env+/shICuF+HfuTtz+GfA1uciX4Jr1K9/17Ga4IxNnAJsHrg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script async src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.6.0/dash.all.min.js" integrity="sha512-hOSYO24njJv9QLvXZoACy0vfyYo6+sl5jLw359aj/MULnOX2BkNSvf/AHezS7Lna2iP8386FiTNwEyuDE32UeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.0/hls.min.js" integrity="sha512-UdBBt/U2IpeTsZspIuaYSuNKTGO4dwnX7UdB2Env+/shICuF+HfuTtz+GfA1uciX4Jr1K9/17Ga4IxNnAJsHrg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.6.0/dash.all.min.js" integrity="sha512-hOSYO24njJv9QLvXZoACy0vfyYo6+sl5jLw359aj/MULnOX2BkNSvf/AHezS7Lna2iP8386FiTNwEyuDE32UeA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -22,6 +22,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         // check if the browser actually supports the <video> element
         var supportsVideo = !!document.createElement("video").canPlayType
+        
         if(supportsVideo) {
           try {
             // helpers class to create playlist dropdown

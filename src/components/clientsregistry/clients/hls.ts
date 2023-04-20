@@ -1,11 +1,12 @@
-import Hls from 'hls.js'
+
+const Hls = window.Hls
 
 import { VideoClient } from "../videoclient";
 
 class HlsClient extends VideoClient {
   registeredFileExtensions = ['m3u8'];
   
-  client: Hls
+  client: typeof Hls
 
   constructor() {
     super()

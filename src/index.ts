@@ -6,11 +6,11 @@ import { DashClient, HlsClient, Mp4Client } from './components/clientsregistry/c
 import '../assets/styles/styles.scss'
 import jsonPlaylist from './playlist.json'
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 declare global {
   interface Window {
-    Hls: unknown
-    Dash: unknown
-    Mp4: unknown
+    Hls: any
+    dashjs: any
     broit: {
       Playlist: Playlist,
       VideoPlayer: typeof VideoPlayer,
