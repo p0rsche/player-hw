@@ -14,3 +14,8 @@ or
 `npm run build` (to build artefacts)
 
 and open ./example/index.html in your favorite browser
+
+
+## Live
+
+[Videoplayer homework on Netlify](https://broit-player.netlify.app/)
