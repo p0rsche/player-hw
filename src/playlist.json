@@ -1,0 +1,5 @@
+[
+  { "title": "Angel One", "url": "https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd" },
+  { "title": "Big Buck Bunny: Dark Truths", "url": "https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/hls.m3u8" },
+  { "title": "Sintel", "url": "https://media.w3.org/2010/05/sintel/trailer.mp4" }
+]
