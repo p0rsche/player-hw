@@ -17,7 +17,7 @@ export default class StateManager extends EventTarget {
   abortController: AbortController
   reportOnInit = true
 
-  private latestEventType = ''
+  private defaultEventOps = {}
 
   constructor(private videoEl: HTMLVideoElement, options: StateManagerOptions = {}) {
     super()
@@ -25,6 +25,7 @@ export default class StateManager extends EventTarget {
     this.logger = logger
     this.currentState = currentState
     this.abortController = new AbortController()
+    this.defaultEventOps = { signal: this.abortController.signal }
     this.detectInitialState()
     if(this.reportOnInit) {
       this.logger.log(this.currentState)
@@ -60,10 +61,7 @@ export default class StateManager extends EventTarget {
     }
   }
 
-  addEventListeners() {
-    const opts = { signal: this.abortController.signal }
-    const once = { once: true }
-    
+  private seeking() {
     this.videoEl.addEventListener(MediaElementEvent.SEEKING, () => {
       // Workaround when video is ended and user clicked 'play' button
       // so seeking event fires and then playing the video
@@ -73,16 +71,20 @@ export default class StateManager extends EventTarget {
         this.prevState = this.currentState
       }
       this.currentState = VIDEOSTATE.SEEKING
-    }, opts)
+    }, this.defaultEventOps)
 
     this.videoEl.addEventListener(MediaElementEvent.SEEKED, () => {
       this.currentState = this.prevState
-    }, opts)
+    }, this.defaultEventOps)
+  }
 
+  private ended() {
     this.videoEl.addEventListener(MediaElementEvent.ENDED, () => {
       this.currentState = VIDEOSTATE.ENDED
-    }, opts)
+    }, this.defaultEventOps)
+  }
 
+  private paused() {
     this.videoEl.addEventListener(MediaElementEvent.PAUSE, () => {
       // do not report PAUSED event when seeking
       if(this.videoEl.seeking === true) return
@@ -90,18 +92,23 @@ export default class StateManager extends EventTarget {
       if(this.videoEl.ended === true) return
       
       this.currentState = VIDEOSTATE.PAUSED
-    }, opts)
+    }, this.defaultEventOps)
+  }
 
+  private playing() {
     this.videoEl.addEventListener(MediaElementEvent.PLAYING, () => {
       this.currentState = VIDEOSTATE.PLAYING
-    }, opts)
+    }, this.defaultEventOps)
+  }
+
+  private loadingAndReady() {
     // LOADING -> READY (when src attr provided in html), works for all except iOS Safari 
     this.videoEl.addEventListener(MediaElementEvent.EMPTIED, () => {
       this.currentState = VIDEOSTATE.LOADING
       this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
         this.currentState = VIDEOSTATE.READY
-      }, { ...opts, ...once })
-    }, opts)
+      }, { ...this.defaultEventOps, once: true })
+    }, this.defaultEventOps)
 
     // LOADING -> READY (when changed src programmatically), works for all except Chrome and iOS Safari 
     this.videoEl.addEventListener(MediaElementEvent.LOADSTART, () => {
@@ -109,43 +116,43 @@ export default class StateManager extends EventTarget {
 
       this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
         this.currentState = VIDEOSTATE.READY
-      }, { ...opts, ...once })
+      }, { ...this.defaultEventOps, once: true })
 
       //ios workaround
       this.videoEl.addEventListener(MediaElementEvent.SUSPEND, () => {
         this.videoEl.addEventListener(MediaElementEvent.LOADEDMETADATA, () => {
           this.currentState = VIDEOSTATE.READY
-        }, { ...opts, ...once })
-      }, { ...opts, ...once })
-
-    }, opts)
-
-    this.applyIOSWorkarounds()
-
-    // const events = [
-    //   'loadstart', 'durationchange', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 
-    //   'suspend', 'ended', 'emptied', 'stalled', 'play', 'playing', 'timeupdate', 'pause',
-    //   'seeking', 'seeked', 'progress', 'waiting',
-    // ]
-
-    // events.forEach(eventName => {
-    //   this.videoEl.addEventListener(eventName, e => {
-    //     console.log(e.type)
-    //   }, opts)
-    // })
+        }, { ...this.defaultEventOps, once: true })
+      }, { ...this.defaultEventOps, once: true })
+    }, this.defaultEventOps)
   }
 
-  applyIOSWorkarounds() {
-    // const opts = { once: true, signal: this.abortController.signal }
-    // this.videoEl.addEventListener(MediaElementEvent.LOADSTART, () => {
-    //   this.videoEl.addEventListener(MediaElementEvent.SUSPEND, () => {
-    //     this.videoEl.addEventListener(MediaElementEvent.DURATIONCHANGE, () => {
-    //       this.videoEl.addEventListener(MediaElementEvent.LOADEDMETADATA, () => {
-    //         //READY!
-    //       }, opts)
-    //     }, { signal: this.abortController.signal })
-    //   }, opts)
-    // }, { signal: this.abortController.signal })
+  // private buffering() {
+  //   this.videoEl.addEventListener(MediaElementEvent.WAITING, () => {
+  //     const bufferingStartTime = +(new Date)
+  //     this.prevState = this.currentState
+  //     this.currentState = VIDEOSTATE.BUFFERING
+  //     this.videoEl.addEventListener(MediaElementEvent.PLAYING, () => {
+  //       const bufferingFinishTime = +(new Date) - bufferingStartTime
+  //       // this.currentState = +bufferingFinishTime
+  //       console.log(bufferingFinishTime)
+  //       this.currentState = VIDEOSTATE.PLAYING
+  //     }, { ...this.defaultEventOps, once: true})
+  //   }, this.defaultEventOps)
+  // }
+
+  addEventListeners() {
+    this.seeking()
+    
+    this.ended()
+
+    this.paused()
+
+    this.playing()
+
+    this.loadingAndReady()
+
+    // this.buffering()
   }
 
   removeEventListeners() {
@@ -157,32 +164,3 @@ export default class StateManager extends EventTarget {
     this.removeEventListeners()
   }
 }
-
-/**
- * on load
- * 
- * Chrome -> 'IDLE' -> loadstart? -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend?
- * FF -> 'IDLE' -> loadstart -> suspend? -> durationchange -> loadedmetadata -> suspend? -> loadeddata -> canplay
- * Safari -> 'IDLE' -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough
- * Edge -> 'IDLE' -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend
- * Opera -> 'IDLE' -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough
- * iOS Safari -> 'IDLE' -> loadstart -> suspend -> durationchange -> loadedmetadata (maybe check status )
- * Android Chrome -> 'IDLE' -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend?
- * 
- */
-
-/**
- * On source update
- * Chrome -> 'LOADING' -> emptied -> timeupdate -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend?
- * FF -> 'LOADING' -> emptied -> loadstart -> suspend -> durationchange -> loadedmetadata -> suspend? -> loadeddata -> canplay
- * Safari -> 'LOADING' -> emptied -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> stalled?
- * Edge -> 'LOADING' -> emptied -> timeupdate -> loadstart -> durationchange -> loadedmetadata -> canplay -> canplaythrough -> suspend
- * Opera -> 'LOADING' -> emptied -> timeupdate -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend?
- * iOS Safari -> 'LOADING' -> emptied -> loadstart -> suspend -> durationchange -> loadedmetadata
- * Android Chrome -> 'LOADING' -> emptied -> timeupdate -> loadstart -> durationchange -> loadedmetadata -> loadeddata -> canplay -> canplaythrough -> suspend?
- * 
- */
-
-/**
- * Continuously seeking by clicking on timeline and moving on is out of bounds since it needs more granular control and differs in desktop and mobile browsers
- */

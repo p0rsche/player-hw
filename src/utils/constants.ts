@@ -49,4 +49,6 @@ export enum MediaElementEvent {
   SUSPEND = 'suspend',
   DURATIONCHANGE = 'durationchange',
   LOADEDMETADATA = 'loadedmetadata',
+  PROGRESS = 'progress',
+  WAITING = 'waiting',
 }

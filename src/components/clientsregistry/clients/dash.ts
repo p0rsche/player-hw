@@ -24,7 +24,7 @@ class DashClient extends VideoClient {
 
   setupEventListeners() {
     this.client.on(dashjs.MediaPlayer.events['STREAM_INITIALIZED'], () => {
-      this.client.setTextTrack(-1) //turn of captions by default
+      this.client.setTextTrack(-1) //turn off captions by default
     })
   }
 
