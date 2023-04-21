@@ -1,5 +1,4 @@
 
-import { VIDEOSTATE } from '../../utils/constants'
 import { getFileExtensionFromUrl } from '../../utils/helpers'
 import { IClientRegistry } from '../clientsregistry'
 import { IVideoClient } from '../clientsregistry/videoclient'
@@ -8,7 +7,7 @@ import StateManager from '../statemanager'
 
 export interface IVideoPlayer {
   load(url: string): void
-  reportStateChanges: (state: VIDEOSTATE) => void
+  reportStateChanges: (state: string) => void
   onVideoStateChange: (cb: (state: string) => void) => void
   setVideoClientRegistry: (registry: IClientRegistry) => void
   reportStatus: () => void
@@ -72,7 +71,7 @@ class VideoPlayer implements IVideoPlayer {
     this.logger.log(this.stateManager.currentState)
   }
 
-  reportStateChanges(state: VIDEOSTATE) {
+  reportStateChanges(state: string) {
     this.videoStateChangesCbs.forEach(cb => cb(state))
   }
 

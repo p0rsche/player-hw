@@ -12,12 +12,17 @@ type StateManagerOptions = {
 
 export default class StateManager extends EventTarget {
   logger
-  #currentState: VIDEOSTATE
   prevState: VIDEOSTATE = VIDEOSTATE.UNKNOWN
   abortController: AbortController
   reportOnInit = true
 
+  private _currentState: VIDEOSTATE
+  private isAlreadyBuffering = false
+  private isAlreadySeeking = false
+
   private defaultEventOps = {}
+  private bufferingStartTime = 0
+  private bufferingEndTime = 0
 
   constructor(private videoEl: HTMLVideoElement, options: StateManagerOptions = {}) {
     super()
@@ -34,13 +39,18 @@ export default class StateManager extends EventTarget {
   }
 
   get currentState(): VIDEOSTATE {
-    return this.#currentState;
+    return this._currentState;
   }
 
   set currentState(state: VIDEOSTATE) {
-    if(this.#currentState === state) return
-    this.#currentState = state
-    this.dispatchEvent(new CustomEvent('changestate', { detail: state }))
+    if(this.currentState === state) return
+    this._currentState = state
+    let detail: string = state
+    if(state === VIDEOSTATE.BUFFERING_ENDED) {
+      const diff = this.calculateTimingDiff()
+      detail = `${detail} in ${diff}s`
+    }
+    this.dispatchEvent(new CustomEvent('changestate', { detail }))
   }
 
   detectInitialState() {
@@ -61,6 +71,10 @@ export default class StateManager extends EventTarget {
     }
   }
 
+  calculateTimingDiff() {
+    return (this.bufferingEndTime - this.bufferingStartTime) / 1000
+  }
+
   private seeking() {
     this.videoEl.addEventListener(MediaElementEvent.SEEKING, () => {
       // Workaround when video is ended and user clicked 'play' button
@@ -70,12 +84,24 @@ export default class StateManager extends EventTarget {
       } else {
         this.prevState = this.currentState
       }
+      this.isAlreadySeeking = true
       this.currentState = VIDEOSTATE.SEEKING
     }, this.defaultEventOps)
 
     this.videoEl.addEventListener(MediaElementEvent.SEEKED, () => {
-      this.currentState = this.prevState
-    }, this.defaultEventOps)
+      if(this.isAlreadySeeking) {
+        this.isAlreadySeeking = false
+        if(this.currentState === VIDEOSTATE.BUFFERING_STARTED) {
+          this.isAlreadyBuffering = false
+          this.bufferingEndTime = Date.now()
+          this.currentState = VIDEOSTATE.BUFFERING_ENDED
+          this.currentState = this.prevState
+        } else {
+          this.currentState = this.prevState
+        }
+      }
+    }, { ...this.defaultEventOps })
+    
   }
 
   private ended() {
@@ -86,6 +112,8 @@ export default class StateManager extends EventTarget {
 
   private paused() {
     this.videoEl.addEventListener(MediaElementEvent.PAUSE, () => {
+      //do not report PAUSED event when buffering
+      if(this.currentState === VIDEOSTATE.BUFFERING_STARTED) return
       // do not report PAUSED event when seeking
       if(this.videoEl.seeking === true) return
       // do not report PAUSED event just before ENDED (this is by spec, but we need better UX without polluting console)
@@ -127,32 +155,38 @@ export default class StateManager extends EventTarget {
     }, this.defaultEventOps)
   }
 
-  // private buffering() {
-  //   this.videoEl.addEventListener(MediaElementEvent.WAITING, () => {
-  //     const bufferingStartTime = +(new Date)
-  //     this.prevState = this.currentState
-  //     this.currentState = VIDEOSTATE.BUFFERING
-  //     this.videoEl.addEventListener(MediaElementEvent.PLAYING, () => {
-  //       const bufferingFinishTime = +(new Date) - bufferingStartTime
-  //       // this.currentState = +bufferingFinishTime
-  //       console.log(bufferingFinishTime)
-  //       this.currentState = VIDEOSTATE.PLAYING
-  //     }, { ...this.defaultEventOps, once: true})
-  //   }, this.defaultEventOps)
-  // }
+  private buffering() {
+    this.videoEl.addEventListener(MediaElementEvent.WAITING, () => {
+      if(this.isAlreadyBuffering) {
+        this.currentState = VIDEOSTATE.BUFFERING_INTERRUPTED
+        this.bufferingStartTime = Date.now()
+      } else {
+        this.isAlreadyBuffering = true
+        this.bufferingStartTime = Date.now()  
+      }
+      this.currentState = VIDEOSTATE.BUFFERING_STARTED
+    }, this.defaultEventOps)
+
+    this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
+      if(!this.isAlreadyBuffering) return // react only if there are buffering event
+      this.isAlreadyBuffering = false
+      this.bufferingEndTime = Date.now()
+      this.currentState = VIDEOSTATE.BUFFERING_ENDED
+    }, { ...this.defaultEventOps })
+  }
 
   addEventListeners() {
-    this.seeking()
-    
-    this.ended()
+    this.buffering()
 
-    this.paused()
+    this.seeking()
 
     this.playing()
 
     this.loadingAndReady()
+    
+    this.ended()
 
-    // this.buffering()
+    this.paused()
   }
 
   removeEventListeners() {
