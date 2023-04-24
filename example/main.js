@@ -148,7 +148,6 @@ class StateManager extends EventTarget {
         super();
         this.videoEl = videoEl;
         this.prevState = VIDEOSTATE.UNKNOWN;
-        this.reportOnInit = true;
         this.isAlreadyBuffering = false;
         this.isAlreadySeeking = false;
         this.defaultEventOps = {};
@@ -160,9 +159,6 @@ class StateManager extends EventTarget {
         this.abortController = new AbortController();
         this.defaultEventOps = { signal: this.abortController.signal };
         this.detectInitialState();
-        if (this.reportOnInit) {
-            this.logger.log(this.currentState);
-        }
         this.addEventListeners();
     }
     get currentState() {
@@ -318,6 +314,7 @@ class VideoPlayer {
         this.registry = registry;
         this.logger = logger;
         this.videoStateChangesCbs = [];
+        this.initialStatusSent = false;
         this.videoEl = document.querySelector(selector);
         if (((_a = this.videoEl) === null || _a === void 0 ? void 0 : _a.tagName) !== 'VIDEO') {
             this.logger.debug('Wrong video tag');
@@ -363,6 +360,10 @@ class VideoPlayer {
         this.videoStateChangesCbs.forEach(cb => cb(state));
     }
     onVideoStateChange(cb) {
+        if (!this.initialStatusSent) {
+            cb(this.stateManager.currentState);
+            this.initialStatusSent = true;
+        }
         this.videoStateChangesCbs.push(cb);
     }
     setVideoClientRegistry(registry) {
@@ -374,6 +375,36 @@ class VideoPlayer {
     }
 }
 /* harmony default export */ const videoplayer = (VideoPlayer);
+
+;// CONCATENATED MODULE: ./src/components/stateupdater/index.ts
+class StateUpdater {
+    constructor(selector, options = {}) {
+        this.stack = [];
+        this.el = document.querySelector(selector);
+        const { maxEntries = 5, } = options;
+        this.maxEntries = maxEntries;
+        this.stack.length = maxEntries;
+    }
+    render(status) {
+        this.updateStatus(status);
+        this.renderStatuses();
+    }
+    updateStatus(status) {
+        this.stack.unshift(status);
+        this.stack.length = this.maxEntries;
+    }
+    renderStatuses() {
+        const list = document.createElement('ul');
+        for (let i = 0, len = this.stack.length; i < len; i++) {
+            if (!this.stack[i])
+                continue;
+            const li = document.createElement('li');
+            li.textContent = this.stack[i];
+            list.prepend(li);
+        }
+        this.el.replaceChildren(list);
+    }
+}
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/index.ts
 
@@ -567,6 +598,7 @@ const src_playlist_namespaceObject = JSON.parse('[{"title":"Angel One","url":"ht
 
 
 
+
 const registry = new VideoClientRegistry()
     .register(new hls())
     .register(new dash())
@@ -579,6 +611,7 @@ window.broit = {
     Playlist: src_playlist,
     VideoPlayer: videoplayer,
     VideoClientRegistry: registry,
+    StateUpdater: StateUpdater,
 };
 
 /******/ })()
