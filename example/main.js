@@ -5,19 +5,22 @@ var __webpack_exports__ = {};
 ;// CONCATENATED MODULE: ./src/components/playlist/index.ts
 // in real-world, should be fetched remotely and injected in Playlist object
 // helper class to build playlist from JSON-schema
-class Playlist {
-    constructor(playlist = [], logger = console) {
+var Playlist = /** @class */ (function () {
+    function Playlist(playlist, logger) {
+        if (playlist === void 0) { playlist = []; }
+        if (logger === void 0) { logger = console; }
         this.playlist = playlist;
         this.logger = logger;
         this.videoChangeCbs = [];
         this.callListeners = this.callListeners.bind(this);
     }
-    loadPlaylist(playlist = []) {
+    Playlist.prototype.loadPlaylist = function (playlist) {
+        if (playlist === void 0) { playlist = []; }
         this.playlist = playlist;
-    }
-    render(selector) {
+    };
+    Playlist.prototype.render = function (selector) {
         try {
-            const el = document.querySelector(selector);
+            var el = document.querySelector(selector);
             if (!el)
                 throw new DOMException('Element not found');
             this.container = el;
@@ -29,57 +32,59 @@ class Playlist {
             this.logger.debug(e.message);
         }
         return this;
-    }
-    addPlaylistOption(option) {
-        const { title, url } = option;
+    };
+    Playlist.prototype.addPlaylistOption = function (option) {
+        var title = option.title, url = option.url;
         this.selectEl.appendChild(this.createDropdownOption(title, url));
-    }
-    onVideoChange(cb) {
+    };
+    Playlist.prototype.onVideoChange = function (cb) {
         this.videoChangeCbs.push(cb);
-    }
-    createDropdown() {
+    };
+    Playlist.prototype.createDropdown = function () {
+        var _this = this;
         this.selectEl = document.createElement('select');
         this.selectEl.id = this.elemId;
-        const emptyOption = this.createDropdownOption('Please select video', '');
+        var emptyOption = this.createDropdownOption('Please select video', '');
         this.selectEl.appendChild(emptyOption);
-        this.playlist.forEach(el => this.selectEl.appendChild(this.createDropdownOption(el.title, el.url)));
-    }
-    createDropdownOption(text, value) {
-        const option = document.createElement('option');
+        this.playlist.forEach(function (el) { return _this.selectEl.appendChild(_this.createDropdownOption(el.title, el.url)); });
+    };
+    Playlist.prototype.createDropdownOption = function (text, value) {
+        var option = document.createElement('option');
         option.value = value;
         option.text = text;
         return option;
-    }
-    attach() {
+    };
+    Playlist.prototype.attach = function () {
         this.container.appendChild(this.selectEl);
-    }
-    attachEventListeners() {
+    };
+    Playlist.prototype.attachEventListeners = function () {
         this.selectEl.addEventListener('change', this.callListeners);
-    }
-    callListeners(e) {
-        const { text, value } = e.target;
-        this.videoChangeCbs.forEach(cb => cb(text, value));
-    }
-    removeEventListeners() {
+    };
+    Playlist.prototype.callListeners = function (e) {
+        var _a = e.target, text = _a.text, value = _a.value;
+        this.videoChangeCbs.forEach(function (cb) { return cb(text, value); });
+    };
+    Playlist.prototype.removeEventListeners = function () {
         this.selectEl.removeEventListener('change', this.callListeners);
-    }
-    destroy() {
+    };
+    Playlist.prototype.destroy = function () {
         this.removeEventListeners();
         this.selectEl.remove();
         this.selectEl = null;
         this.container = null;
         this.videoChangeCbs = [];
-    }
-}
+    };
+    return Playlist;
+}());
 /* harmony default export */ const playlist = (Playlist);
 
 ;// CONCATENATED MODULE: ./src/utils/helpers.ts
-const debug = console.debug;
-const assert = console.assert;
-const log = console.log;
-const getFileExtensionFromUrl = (url) => {
-    const fileName = url.split('/').pop();
-    const fileExt = fileName === null || fileName === void 0 ? void 0 : fileName.split('.').pop();
+var debug = console.debug;
+var assert = console.assert;
+var log = console.log;
+var getFileExtensionFromUrl = function (url) {
+    var fileName = url.split('/').pop();
+    var fileExt = fileName === null || fileName === void 0 ? void 0 : fileName.split('.').pop();
     return fileExt !== null && fileExt !== void 0 ? fileExt : '';
 };
 
@@ -104,7 +109,7 @@ var VIDEOTYPE;
     VIDEOTYPE["DASH"] = "DASH";
     VIDEOTYPE["HLS"] = "HLS";
 })(VIDEOTYPE || (VIDEOTYPE = {}));
-const videoTypesByExt = {
+var videoTypesByExt = {
     'mp4': VIDEOTYPE.MP4,
     'm3u8': VIDEOTYPE.HLS,
     'mpd': VIDEOTYPE.DASH
@@ -142,46 +147,79 @@ var MediaElementEvent;
 })(MediaElementEvent || (MediaElementEvent = {}));
 
 ;// CONCATENATED MODULE: ./src/components/statemanager/index.ts
+var __extends = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign = (undefined && undefined.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 
-class StateManager extends EventTarget {
-    constructor(videoEl, options = {}) {
-        super();
-        this.videoEl = videoEl;
-        this.prevState = VIDEOSTATE.UNKNOWN;
-        this.reportOnInit = true;
-        this.isAlreadyBuffering = false;
-        this.isAlreadySeeking = false;
-        this.defaultEventOps = {};
-        this.bufferingStartTime = 0;
-        this.bufferingEndTime = 0;
-        const { logger = console, currentState = null } = options;
-        this.logger = logger;
-        this.currentState = currentState;
-        this.abortController = new AbortController();
-        this.defaultEventOps = { signal: this.abortController.signal };
-        this.detectInitialState();
-        if (this.reportOnInit) {
-            this.logger.log(this.currentState);
+var StateManager = /** @class */ (function (_super) {
+    __extends(StateManager, _super);
+    function StateManager(videoEl, options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.videoEl = videoEl;
+        _this.prevState = VIDEOSTATE.UNKNOWN;
+        _this.reportOnInit = true;
+        _this.isAlreadyBuffering = false;
+        _this.isAlreadySeeking = false;
+        _this.defaultEventOps = {};
+        _this.bufferingStartTime = 0;
+        _this.bufferingEndTime = 0;
+        var _a = options.logger, logger = _a === void 0 ? console : _a, _b = options.currentState, currentState = _b === void 0 ? null : _b;
+        _this.logger = logger;
+        _this.currentState = currentState;
+        _this.abortController = new AbortController();
+        _this.defaultEventOps = { signal: _this.abortController.signal };
+        _this.detectInitialState();
+        if (_this.reportOnInit) {
+            _this.logger.log(_this.currentState);
         }
-        this.addEventListeners();
+        _this.addEventListeners();
+        return _this;
     }
-    get currentState() {
-        return this._currentState;
-    }
-    set currentState(state) {
-        if (this.currentState === state)
-            return;
-        this._currentState = state;
-        let detail = state;
-        if (state === VIDEOSTATE.BUFFERING_ENDED) {
-            const diff = this.calculateTimingDiff();
-            detail = `${detail} in ${diff}s`;
-        }
-        this.dispatchEvent(new CustomEvent('changestate', { detail }));
-    }
-    detectInitialState() {
+    Object.defineProperty(StateManager.prototype, "currentState", {
+        get: function () {
+            return this._currentState;
+        },
+        set: function (state) {
+            if (this.currentState === state)
+                return;
+            this._currentState = state;
+            var detail = state;
+            if (state === VIDEOSTATE.BUFFERING_ENDED) {
+                var diff = this.calculateTimingDiff();
+                detail = "".concat(detail, " in ").concat(diff, "s");
+            }
+            this.dispatchEvent(new CustomEvent('changestate', { detail: detail }));
+        },
+        enumerable: false,
+        configurable: true
+    });
+    StateManager.prototype.detectInitialState = function () {
         //simple initial state detector - should be improved
-        const { currentSrc, networkState, readyState } = this.videoEl;
+        var _a = this.videoEl, currentSrc = _a.currentSrc, networkState = _a.networkState, readyState = _a.readyState;
         if (currentSrc) {
             switch (networkState) {
                 case NetworkState.NETWORK_LOADING:
@@ -195,125 +233,135 @@ class StateManager extends EventTarget {
         else if (!currentSrc || (networkState === NetworkState.NETWORK_EMPTY && readyState === ReadyState.HAVE_NOTHING)) {
             this.currentState = VIDEOSTATE.IDLE;
         }
-    }
-    calculateTimingDiff() {
+    };
+    StateManager.prototype.calculateTimingDiff = function () {
         return (this.bufferingEndTime - this.bufferingStartTime) / 1000;
-    }
-    seeking() {
-        this.videoEl.addEventListener(MediaElementEvent.SEEKING, () => {
+    };
+    StateManager.prototype.seeking = function () {
+        var _this = this;
+        this.videoEl.addEventListener(MediaElementEvent.SEEKING, function () {
             // Workaround when video is ended and user clicked 'play' button
             // so seeking event fires and then playing the video
-            if (this.currentState === VIDEOSTATE.ENDED) {
-                this.prevState = VIDEOSTATE.PLAYING;
+            if (_this.currentState === VIDEOSTATE.ENDED) {
+                _this.prevState = VIDEOSTATE.PLAYING;
             }
             else {
-                this.prevState = this.currentState;
+                _this.prevState = _this.currentState;
             }
-            this.isAlreadySeeking = true;
-            this.currentState = VIDEOSTATE.SEEKING;
+            _this.isAlreadySeeking = true;
+            _this.currentState = VIDEOSTATE.SEEKING;
         }, this.defaultEventOps);
-        this.videoEl.addEventListener(MediaElementEvent.SEEKED, () => {
-            if (this.isAlreadySeeking) {
-                this.isAlreadySeeking = false;
-                if (this.currentState === VIDEOSTATE.BUFFERING_STARTED) {
-                    this.isAlreadyBuffering = false;
-                    this.bufferingEndTime = Date.now();
-                    this.currentState = VIDEOSTATE.BUFFERING_ENDED;
-                    this.currentState = this.prevState;
+        this.videoEl.addEventListener(MediaElementEvent.SEEKED, function () {
+            if (_this.isAlreadySeeking) {
+                _this.isAlreadySeeking = false;
+                if (_this.currentState === VIDEOSTATE.BUFFERING_STARTED) {
+                    _this.isAlreadyBuffering = false;
+                    _this.bufferingEndTime = Date.now();
+                    _this.currentState = VIDEOSTATE.BUFFERING_ENDED;
+                    _this.currentState = _this.prevState;
                 }
                 else {
-                    this.currentState = this.prevState;
+                    _this.currentState = _this.prevState;
                 }
             }
-        }, Object.assign({}, this.defaultEventOps));
-    }
-    ended() {
-        this.videoEl.addEventListener(MediaElementEvent.ENDED, () => {
-            this.currentState = VIDEOSTATE.ENDED;
+        }, __assign({}, this.defaultEventOps));
+    };
+    StateManager.prototype.ended = function () {
+        var _this = this;
+        this.videoEl.addEventListener(MediaElementEvent.ENDED, function () {
+            _this.currentState = VIDEOSTATE.ENDED;
         }, this.defaultEventOps);
-    }
-    paused() {
-        this.videoEl.addEventListener(MediaElementEvent.PAUSE, () => {
+    };
+    StateManager.prototype.paused = function () {
+        var _this = this;
+        this.videoEl.addEventListener(MediaElementEvent.PAUSE, function () {
             //do not report PAUSED event when buffering
-            if (this.currentState === VIDEOSTATE.BUFFERING_STARTED)
+            if (_this.currentState === VIDEOSTATE.BUFFERING_STARTED)
                 return;
             // do not report PAUSED event when seeking
-            if (this.videoEl.seeking === true)
+            if (_this.videoEl.seeking === true)
                 return;
             // do not report PAUSED event just before ENDED (this is by spec, but we need better UX without polluting console)
-            if (this.videoEl.ended === true)
+            if (_this.videoEl.ended === true)
                 return;
-            this.currentState = VIDEOSTATE.PAUSED;
+            _this.currentState = VIDEOSTATE.PAUSED;
         }, this.defaultEventOps);
-    }
-    playing() {
-        this.videoEl.addEventListener(MediaElementEvent.PLAYING, () => {
-            this.currentState = VIDEOSTATE.PLAYING;
+    };
+    StateManager.prototype.playing = function () {
+        var _this = this;
+        this.videoEl.addEventListener(MediaElementEvent.PLAYING, function () {
+            _this.currentState = VIDEOSTATE.PLAYING;
         }, this.defaultEventOps);
-    }
-    loadingAndReady() {
+    };
+    StateManager.prototype.loadingAndReady = function () {
+        var _this = this;
         // LOADING -> READY (when src attr provided in html), works for all except iOS Safari 
-        this.videoEl.addEventListener(MediaElementEvent.EMPTIED, () => {
-            this.currentState = VIDEOSTATE.LOADING;
-            this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
-                this.currentState = VIDEOSTATE.READY;
-            }, Object.assign(Object.assign({}, this.defaultEventOps), { once: true }));
+        this.videoEl.addEventListener(MediaElementEvent.EMPTIED, function () {
+            _this.currentState = VIDEOSTATE.LOADING;
+            _this.videoEl.addEventListener(MediaElementEvent.CANPLAY, function () {
+                _this.currentState = VIDEOSTATE.READY;
+            }, __assign(__assign({}, _this.defaultEventOps), { once: true }));
         }, this.defaultEventOps);
         // LOADING -> READY (when changed src programmatically), works for all except Chrome and iOS Safari 
-        this.videoEl.addEventListener(MediaElementEvent.LOADSTART, () => {
-            this.currentState = VIDEOSTATE.LOADING;
-            this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
-                this.currentState = VIDEOSTATE.READY;
-            }, Object.assign(Object.assign({}, this.defaultEventOps), { once: true }));
+        this.videoEl.addEventListener(MediaElementEvent.LOADSTART, function () {
+            _this.currentState = VIDEOSTATE.LOADING;
+            _this.videoEl.addEventListener(MediaElementEvent.CANPLAY, function () {
+                _this.currentState = VIDEOSTATE.READY;
+            }, __assign(__assign({}, _this.defaultEventOps), { once: true }));
             //ios workaround
-            this.videoEl.addEventListener(MediaElementEvent.SUSPEND, () => {
-                this.videoEl.addEventListener(MediaElementEvent.LOADEDMETADATA, () => {
-                    this.currentState = VIDEOSTATE.READY;
-                }, Object.assign(Object.assign({}, this.defaultEventOps), { once: true }));
-            }, Object.assign(Object.assign({}, this.defaultEventOps), { once: true }));
+            _this.videoEl.addEventListener(MediaElementEvent.SUSPEND, function () {
+                _this.videoEl.addEventListener(MediaElementEvent.LOADEDMETADATA, function () {
+                    _this.currentState = VIDEOSTATE.READY;
+                }, __assign(__assign({}, _this.defaultEventOps), { once: true }));
+            }, __assign(__assign({}, _this.defaultEventOps), { once: true }));
         }, this.defaultEventOps);
-    }
-    buffering() {
-        this.videoEl.addEventListener(MediaElementEvent.WAITING, () => {
-            if (this.isAlreadyBuffering) {
-                this.currentState = VIDEOSTATE.BUFFERING_INTERRUPTED;
-                this.bufferingStartTime = Date.now();
+    };
+    StateManager.prototype.buffering = function () {
+        var _this = this;
+        this.videoEl.addEventListener(MediaElementEvent.WAITING, function () {
+            if (_this.isAlreadyBuffering) {
+                _this.currentState = VIDEOSTATE.BUFFERING_INTERRUPTED;
+                _this.bufferingStartTime = Date.now();
             }
             else {
-                this.isAlreadyBuffering = true;
-                this.bufferingStartTime = Date.now();
+                _this.isAlreadyBuffering = true;
+                _this.bufferingStartTime = Date.now();
             }
-            this.currentState = VIDEOSTATE.BUFFERING_STARTED;
+            _this.currentState = VIDEOSTATE.BUFFERING_STARTED;
         }, this.defaultEventOps);
-        this.videoEl.addEventListener(MediaElementEvent.CANPLAY, () => {
-            if (!this.isAlreadyBuffering)
+        this.videoEl.addEventListener(MediaElementEvent.CANPLAY, function () {
+            if (!_this.isAlreadyBuffering)
                 return; // react only if there are buffering event
-            this.isAlreadyBuffering = false;
-            this.bufferingEndTime = Date.now();
-            this.currentState = VIDEOSTATE.BUFFERING_ENDED;
-        }, Object.assign({}, this.defaultEventOps));
-    }
-    addEventListeners() {
+            _this.isAlreadyBuffering = false;
+            _this.bufferingEndTime = Date.now();
+            _this.currentState = VIDEOSTATE.BUFFERING_ENDED;
+        }, __assign({}, this.defaultEventOps));
+    };
+    StateManager.prototype.addEventListeners = function () {
         this.buffering();
         this.seeking();
         this.playing();
         this.loadingAndReady();
         this.ended();
         this.paused();
-    }
-    removeEventListeners() {
+    };
+    StateManager.prototype.removeEventListeners = function () {
         this.abortController.abort();
-    }
-    destroy() {
+    };
+    StateManager.prototype.destroy = function () {
         this.removeEventListeners();
-    }
-}
+    };
+    return StateManager;
+}(EventTarget));
+/* harmony default export */ const statemanager = (StateManager);
 
 ;// CONCATENATED MODULE: ./src/components/videoplayer/index.ts
 
 
-class VideoPlayer {
-    constructor(selector, registry = window.broit.VideoClientRegistry, logger = console) {
+var VideoPlayer = /** @class */ (function () {
+    function VideoPlayer(selector, registry, logger) {
+        if (registry === void 0) { registry = window.broit.VideoClientRegistry; }
+        if (logger === void 0) { logger = console; }
         var _a;
         this.registry = registry;
         this.logger = logger;
@@ -323,21 +371,21 @@ class VideoPlayer {
             this.logger.debug('Wrong video tag');
             return;
         }
-        this.stateManager = new StateManager(this.videoEl);
+        this.stateManager = new statemanager(this.videoEl);
         this.attachEventListeners();
         this.applyWorkarounds();
         if (this.videoEl.currentSrc !== '')
             this.load(this.videoEl.currentSrc);
     }
-    applyWorkarounds() {
+    VideoPlayer.prototype.applyWorkarounds = function () {
         //ios workaround for autoplay
         this.videoEl.playsInline = true;
-    }
-    load(url) {
+    };
+    VideoPlayer.prototype.load = function (url) {
         if (!url || this.currentUrl === url)
             return;
         this.currentUrl = url;
-        const fileExt = getFileExtensionFromUrl(this.currentUrl);
+        var fileExt = getFileExtensionFromUrl(this.currentUrl);
         this.currentVideoClient = this.registry.findClientByExt(fileExt);
         if (!this.currentVideoClient) {
             this.currentVideoClient = this.registry.getDefaultClient();
@@ -347,41 +395,43 @@ class VideoPlayer {
             }
         }
         this.currentVideoClient.init(this.videoEl, url);
-    }
-    attachEventListeners() {
-        this.stateManager.addEventListener('changestate', (e) => {
-            this.reportStateChanges(e.detail);
+    };
+    VideoPlayer.prototype.attachEventListeners = function () {
+        var _this = this;
+        this.stateManager.addEventListener('changestate', function (e) {
+            _this.reportStateChanges(e.detail);
         });
-    }
-    removeEventListeners() {
+    };
+    VideoPlayer.prototype.removeEventListeners = function () {
         this.stateManager.removeEventListeners();
-    }
-    reportStatus() {
+    };
+    VideoPlayer.prototype.reportStatus = function () {
         this.logger.log(this.stateManager.currentState);
-    }
-    reportStateChanges(state) {
-        this.videoStateChangesCbs.forEach(cb => cb(state));
-    }
-    onVideoStateChange(cb) {
+    };
+    VideoPlayer.prototype.reportStateChanges = function (state) {
+        this.videoStateChangesCbs.forEach(function (cb) { return cb(state); });
+    };
+    VideoPlayer.prototype.onVideoStateChange = function (cb) {
         this.videoStateChangesCbs.push(cb);
-    }
-    setVideoClientRegistry(registry) {
+    };
+    VideoPlayer.prototype.setVideoClientRegistry = function (registry) {
         this.registry = registry;
-    }
-    destroy() {
+    };
+    VideoPlayer.prototype.destroy = function () {
         this.removeEventListeners();
         this.videoStateChangesCbs = [];
-    }
-}
+    };
+    return VideoPlayer;
+}());
 /* harmony default export */ const videoplayer = (VideoPlayer);
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/index.ts
 
-class VideoClientRegistry {
-    constructor() {
+var VideoClientRegistry = /** @class */ (function () {
+    function VideoClientRegistry() {
         this.registeredClients = new Set();
     }
-    register(client) {
+    VideoClientRegistry.prototype.register = function (client) {
         if (client.isDefault()) {
             if (this.defaultClient) {
                 debug('Default client is already registered');
@@ -391,19 +441,19 @@ class VideoClientRegistry {
         }
         this.registeredClients.add(client);
         return this;
-    }
-    unregister(client) {
+    };
+    VideoClientRegistry.prototype.unregister = function (client) {
         this.defaultClient = null;
         this.registeredClients.delete(client);
         return this;
-    }
-    getDefaultClient() {
+    };
+    VideoClientRegistry.prototype.getDefaultClient = function () {
         return this.defaultClient;
-    }
-    findClientByExt(ext) {
-        let foundClient;
+    };
+    VideoClientRegistry.prototype.findClientByExt = function (ext) {
+        var foundClient;
         try {
-            this.registeredClients.forEach(client => {
+            this.registeredClients.forEach(function (client) {
                 if (client.supports(ext)) {
                     foundClient = client;
                     throw new Error(); // throwing just to short-circuit and exit from forEach
@@ -415,99 +465,142 @@ class VideoClientRegistry {
             // just chillin
         }
         return foundClient;
-    }
-    destroy() {
+    };
+    VideoClientRegistry.prototype.destroy = function () {
         this.registeredClients = null;
         this.defaultClient = null;
-    }
-}
+    };
+    return VideoClientRegistry;
+}());
+/* harmony default export */ const clientsregistry = (VideoClientRegistry);
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/videoclient.ts
-class VideoClient {
-    constructor(logger = console) {
+var VideoClient = /** @class */ (function () {
+    function VideoClient(logger) {
+        if (logger === void 0) { logger = console; }
         this.registeredFileExtensions = [];
         this.autoplay = true;
         this.default = false;
         this.logger = logger;
     }
-    play() {
+    VideoClient.prototype.play = function () {
+        var _this = this;
         try {
-            const promise = this.videoEl.play();
+            var promise = this.videoEl.play();
             if (promise !== undefined) {
-                promise.then(() => {
+                promise.then(function () {
                     // Autoplay started!
-                }).catch(() => {
+                }).catch(function () {
                     // Autoplay not allowed!
                     // Mute video and try to play again
-                    this.videoEl.muted = true;
-                    this.videoEl.play();
+                    _this.videoEl.muted = true;
+                    _this.videoEl.play();
                 });
             }
         }
         catch (e) {
             this.logger.debug(e);
         }
-    }
-    isDefault() {
+    };
+    VideoClient.prototype.isDefault = function () {
         return this.default;
-    }
-    init(video, url) {
+    };
+    VideoClient.prototype.init = function (video, url) {
         this.videoEl = video;
         this.currentUrl = url;
-    }
-    supports(ext) {
-        return this.registeredFileExtensions.some(e => e === ext);
-    }
-    destroy() {
+    };
+    VideoClient.prototype.supports = function (ext) {
+        return this.registeredFileExtensions.some(function (e) { return e === ext; });
+    };
+    VideoClient.prototype.destroy = function () {
         this.client = null;
         this.videoEl = null;
         this.currentUrl = null;
-    }
-}
+    };
+    return VideoClient;
+}());
+
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/clients/dash.ts
-const dashjs = window.dashjs;
+var dash_extends = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var dashjs = window.dashjs;
 
-class DashClient extends VideoClient {
-    constructor() {
-        super();
-        this.registeredFileExtensions = ['mpd'];
+var DashClient = /** @class */ (function (_super) {
+    dash_extends(DashClient, _super);
+    function DashClient() {
+        var _this = _super.call(this) || this;
+        _this.registeredFileExtensions = ['mpd'];
+        return _this;
     }
-    init(video, url) {
-        super.init(video, url);
+    DashClient.prototype.init = function (video, url) {
+        _super.prototype.init.call(this, video, url);
         this.client = dashjs.MediaPlayer().create();
         this.client.initialize(this.videoEl, this.currentUrl, this.autoplay);
         this.client.updateSettings({ 'debug': { 'logLevel': 0 } });
         this.setupEventListeners();
         if (this.autoplay)
             this.play();
-    }
-    setupEventListeners() {
-        this.client.on(dashjs.MediaPlayer.events['STREAM_INITIALIZED'], () => {
-            this.client.setTextTrack(-1); //turn off captions by default
+    };
+    DashClient.prototype.setupEventListeners = function () {
+        var _this = this;
+        this.client.on(dashjs.MediaPlayer.events['STREAM_INITIALIZED'], function () {
+            _this.client.setTextTrack(-1); //turn off captions by default
         });
-    }
-    destroy() {
+    };
+    DashClient.prototype.destroy = function () {
         var _a;
         (_a = this.client) === null || _a === void 0 ? void 0 : _a.reset();
-    }
-}
+    };
+    return DashClient;
+}(VideoClient));
 /* harmony default export */ const dash = (DashClient);
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/clients/hls.ts
-const Hls = window.Hls;
+var hls_extends = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var Hls = window.Hls;
 
-class HlsClient extends VideoClient {
-    constructor() {
-        super();
-        this.registeredFileExtensions = ['m3u8'];
+var HlsClient = /** @class */ (function (_super) {
+    hls_extends(HlsClient, _super);
+    function HlsClient() {
+        var _this = _super.call(this) || this;
+        _this.registeredFileExtensions = ['m3u8'];
+        return _this;
     }
-    init(video, url) {
-        super.init(video, url);
+    HlsClient.prototype.init = function (video, url) {
+        var _this = this;
+        _super.prototype.init.call(this, video, url);
         if (this.videoEl.canPlayType('application/vnd.apple.mpegurl')) {
             this.videoEl.src = this.currentUrl;
-            this.autoplay === true && this.videoEl.addEventListener('loadedmetadata', () => {
-                this.play();
+            this.autoplay === true && this.videoEl.addEventListener('loadedmetadata', function () {
+                _this.play();
             }, { once: true });
             //
             // If no native HLS support, check if HLS.js is supported
@@ -519,8 +612,8 @@ class HlsClient extends VideoClient {
             this.client = new Hls();
             this.client.loadSource(this.currentUrl);
             this.client.attachMedia(this.videoEl);
-            this.autoplay === true && this.client.once(Hls.Events.MANIFEST_PARSED, () => {
-                this.play();
+            this.autoplay === true && this.client.once(Hls.Events.MANIFEST_PARSED, function () {
+                _this.play();
             });
             if (this.autoplay)
                 this.play();
@@ -528,28 +621,47 @@ class HlsClient extends VideoClient {
         else {
             this.logger.debug('Error initializing HLS support');
         }
-    }
-    destroy() {
+    };
+    HlsClient.prototype.destroy = function () {
         this.client.destroy();
-    }
-}
+    };
+    return HlsClient;
+}(VideoClient));
 /* harmony default export */ const hls = (HlsClient);
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/clients/mp4.ts
+var mp4_extends = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 
-class Mp4Client extends VideoClient {
-    constructor() {
-        super();
-        this.registeredFileExtensions = ['mp4'];
-        this.default = true;
+var Mp4Client = /** @class */ (function (_super) {
+    mp4_extends(Mp4Client, _super);
+    function Mp4Client() {
+        var _this = _super.call(this) || this;
+        _this.registeredFileExtensions = ['mp4'];
+        _this.default = true;
+        return _this;
     }
-    init(video, url) {
-        super.init(video, url);
+    Mp4Client.prototype.init = function (video, url) {
+        _super.prototype.init.call(this, video, url);
         this.videoEl.src = url;
         if (this.autoplay)
             this.play();
-    }
-}
+    };
+    return Mp4Client;
+}(VideoClient));
 /* harmony default export */ const mp4 = (Mp4Client);
 
 ;// CONCATENATED MODULE: ./src/components/clientsregistry/clients/index.ts
@@ -567,11 +679,11 @@ const src_playlist_namespaceObject = JSON.parse('[{"title":"Angel One","url":"ht
 
 
 
-const registry = new VideoClientRegistry()
+var registry = new clientsregistry()
     .register(new hls())
     .register(new dash())
     .register(new mp4());
-const src_playlist = new playlist(src_playlist_namespaceObject); //in real world, playlist usually will be fetched remotely
+var src_playlist = new playlist(src_playlist_namespaceObject); //in real world, playlist usually will be fetched remotely
 // as per task, we need VideoPlayer to be constructed with selector and has the load method.
 // unfortunately, I had to add one more global dependency to track video client libraries
 // but this can be changed
