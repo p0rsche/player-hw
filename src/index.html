@@ -17,6 +17,7 @@
       <video id="homework-player" controls playsinline>
         Your browser does not support HTML5 video. Please update your browser and try again.
       </video>
+      <div id="videostatuses"></div>
     </div>
     <script type="text/javascript">
       document.addEventListener('DOMContentLoaded', () => {
@@ -29,8 +30,13 @@
             var playlist = window.broit.Playlist.render('#playlist-container')
             // video player controller
             var player = new window.broit.VideoPlayer('#homework-player')
+
+            var stateUpdater = new window.broit.StateUpdater('#videostatuses')
             //subscribing on synthetic videostatechange events
-            player.onVideoStateChange(state => console.log(state))
+            player.onVideoStateChange(state => {
+              console.log(state)
+              stateUpdater.render(state)
+            })
             
             //subscribing on dropdown list change events
             playlist.onVideoChange((title, url) => {

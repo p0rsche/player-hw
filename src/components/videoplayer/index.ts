@@ -23,6 +23,8 @@ class VideoPlayer implements IVideoPlayer {
   currentUrl: string
   currentVideoClient: IVideoClient
 
+  initialStatusSent = false
+
   constructor(selector: string, private registry: IClientRegistry = window.broit.VideoClientRegistry, private logger = console) {
     this.videoEl = document.querySelector(selector)
 
@@ -76,6 +78,10 @@ class VideoPlayer implements IVideoPlayer {
   }
 
   onVideoStateChange(cb: (state: string) => void): void {
+    if(!this.initialStatusSent) {
+      cb(this.stateManager.currentState)
+      this.initialStatusSent = true
+    }
     this.videoStateChangesCbs.push(cb)
   }
 

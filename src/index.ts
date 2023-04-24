@@ -1,5 +1,6 @@
 import Playlist from './components/playlist'
 import VideoPlayer from './components/videoplayer'
+import StateUpdater from './components/stateupdater';
 import VideoClientRegistry, { IClientRegistry } from './components/clientsregistry';
 import { DashClient, HlsClient, Mp4Client } from './components/clientsregistry/clients';
 
@@ -14,7 +15,8 @@ declare global {
     broit: {
       Playlist: Playlist,
       VideoPlayer: typeof VideoPlayer,
-      VideoClientRegistry: IClientRegistry
+      VideoClientRegistry: IClientRegistry,
+      StateUpdater: typeof StateUpdater
     }
   }
 }
@@ -33,4 +35,5 @@ window.broit = {
   Playlist: playlist,
   VideoPlayer,
   VideoClientRegistry: registry,
+  StateUpdater,
 }

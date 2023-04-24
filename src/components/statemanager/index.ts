@@ -7,14 +7,12 @@ type ConsoleLike = Pick<Console, 'log' | 'debug' | 'warn'>
 type StateManagerOptions = {
   logger?: ConsoleLike
   currentState?: VIDEOSTATE
-  reportOnInit?: boolean
 }
 
 export default class StateManager extends EventTarget {
   logger
   prevState: VIDEOSTATE = VIDEOSTATE.UNKNOWN
   abortController: AbortController
-  reportOnInit = true
 
   private _currentState: VIDEOSTATE
   private isAlreadyBuffering = false
@@ -32,9 +30,6 @@ export default class StateManager extends EventTarget {
     this.abortController = new AbortController()
     this.defaultEventOps = { signal: this.abortController.signal }
     this.detectInitialState()
-    if(this.reportOnInit) {
-      this.logger.log(this.currentState)
-    }
     this.addEventListeners()
   }
 
